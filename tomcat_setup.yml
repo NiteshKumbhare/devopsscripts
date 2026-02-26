@@ -30,6 +30,11 @@
         name: java-17-amazon-corretto
         state: present
 
+    - name: Deploy tomcat-users.xml
+      copy:
+        src: tomcat-users.xml
+        dest: "{{ tomcat_dir }}/conf/tomcat-users.xml"
+
     - name: Deploy context.xml file
       template:
         src: context.xml
