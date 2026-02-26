@@ -2,32 +2,38 @@
   hosts: all
   become: yes
 
+  vars:
+    tomcat_version: "10.1.35"
+    tomcat_dir: "/root/tomcat"
+
   tasks:
 
-    - name: Download tomcat from dlcdn
+    - name: Download Tomcat from Apache Archive
       get_url:
-        url: "https://dlcdn.apache.org/tomcat/tomcat-10/v10.1.35/bin/apache-tomcat-10.1.35.tar.gz"
-        dest: "/root/apache-tomcat-10.1.35.tar.gz"
+        url: "https://archive.apache.org/dist/tomcat/tomcat-10/v{{ tomcat_version }}/bin/apache-tomcat-{{ tomcat_version }}.tar.gz"
+        dest: "/root/apache-tomcat-{{ tomcat_version }}.tar.gz"
 
-    - name: Untar the apache file
-      command: tar -zxvf /root/apache-tomcat-10.1.35.tar.gz -C /root/
-      args:
-        creates: /root/apache-tomcat-10.1.35
+    - name: Extract Tomcat archive
+      unarchive:
+        src: "/root/apache-tomcat-{{ tomcat_version }}.tar.gz"
+        dest: "/root/"
+        remote_src: yes
+        creates: "/root/apache-tomcat-{{ tomcat_version }}"
 
-    - name: Rename the tomcat directory
-      command: mv /root/apache-tomcat-10.1.35 /root/tomcat
+    - name: Rename Tomcat directory
+      command: mv /root/apache-tomcat-{{ tomcat_version }} {{ tomcat_dir }}
       args:
-        creates: /root/tomcat
+        creates: "{{ tomcat_dir }}"
 
     - name: Install Java (Amazon Corretto 17)
       yum:
         name: java-17-amazon-corretto
         state: present
 
-    - name: Setting the context.xml file
+    - name: Deploy context.xml file
       template:
         src: context.xml
-        dest: /root/tomcat/webapps/manager/META-INF/context.xml
+        dest: "{{ tomcat_dir }}/webapps/manager/META-INF/context.xml"
 
     - name: Create Tomcat systemd Service File
       copy:
@@ -42,9 +48,9 @@
           Group=root
           Type=forking
           Environment="JAVA_HOME=/usr/lib/jvm/jre"
-          Environment="CATALINA_HOME=/root/tomcat"
-          ExecStart=/root/tomcat/bin/startup.sh
-          ExecStop=/root/tomcat/bin/shutdown.sh
+          Environment="CATALINA_HOME={{ tomcat_dir }}"
+          ExecStart={{ tomcat_dir }}/bin/startup.sh
+          ExecStop={{ tomcat_dir }}/bin/shutdown.sh
           Restart=on-failure
 
           [Install]
@@ -54,7 +60,7 @@
       systemd:
         daemon_reload: yes
 
-    - name: Start tomcat Service
+    - name: Start and enable Tomcat service
       service:
         name: tomcat
         state: started
