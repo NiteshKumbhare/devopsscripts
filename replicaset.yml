@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: ib-rs                # Name of the ReplicaSet
+  labels:
+    app: bank
+
+spec:                        # This spec is for PODS
+  replicas: 3                # Number of pods required
+
+  selector:                  # Ensures only pods with this label are managed
+    matchLabels:
+      app: bank              # Pods with label app: bank will be part of this ReplicaSet
+
+  template:                  # Pod template
+    metadata:
+      labels:
+        app: bank            # Ensures the pods get labeled as app: bank
+
+    spec:                    # This spec is for containers
+      containers:
+        - name: cont1
+          image: trainerreyaz/ib-image:latest
